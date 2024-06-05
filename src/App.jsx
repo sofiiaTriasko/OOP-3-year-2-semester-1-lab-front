@@ -2,8 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { createGlobalStyle } from 'styled-components';
-import { AdminDashboard } from './pages/AdminDashboard.jsx'; // Ensure this path is correct
-import { UserDashboard } from './pages/UserDashboard.jsx'; // Ensure this path is correct
+import AdminDashboard from './pages/AdminDashboard';
+import UserDashboard from './pages/UserDashboard';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 const GlobalStyle = createGlobalStyle`
   * {
@@ -32,8 +34,10 @@ function App() {
             <GlobalStyle />
             <BrowserRouter>
                 <Routes>
-                        <Route path="admin" element={<AdminDashboard />} />
-                        <Route path="dashboard" element={<UserDashboard />} />
+                    <Route path="login" element={<Login />} />
+                    <Route path="register" element={<Register />} />
+                    <Route path="admin" element={<AdminDashboard />} />
+                    <Route path="dashboard" element={<UserDashboard />} />
                 </Routes>
             </BrowserRouter>
         </>

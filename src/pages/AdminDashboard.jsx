@@ -1,92 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import styled from 'styled-components';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {faTachometerAlt, faUsers, faChartLine, faCog, faEraser} from '@fortawesome/free-solid-svg-icons';
+import styled, { keyframes } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 
-const AdminDashboardContainer = styled.div`
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+`;
+
+const DashboardContainer = styled.div`
   display: flex;
-  height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
   font-family: 'Helvetica Neue', sans-serif;
   background: #1e1e2f;
   color: #fff;
+  min-height: 100vh;
+  animation: ${fadeIn} 0.5s ease-in-out;
 `;
 
-const Sidebar = styled.div`
-  width: 250px;
-  background: #27293d;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-`;
-
-const SidebarTitle = styled.h2`
+const Header = styled.header`
+  width: 100%;
   text-align: center;
-  font-size: 1.5em;
-  margin-bottom: 20px;
-  color: #00d4ff;
-`;
-
-const SidebarItem = styled.div`
-  margin-bottom: 15px;
-  padding: 10px;
-  border-radius: 4px;
-  background: ${props => (props.active ? '#44475a' : '#32344a')};
-  cursor: pointer;
-  transition: background 0.3s, transform 0.3s;
-
-  &:hover {
-    background: #44475a;
-    transform: scale(1.05);
-  }
-
-  display: flex;
-  align-items: center;
-  gap: 10px;
-`;
-
-const MainContent = styled.div`
-  margin-left: 250px;
-  flex-grow: 1;
-  padding: 40px;
-  overflow-y: auto;
-`;
-
-const Section = styled.div`
   margin-bottom: 40px;
 `;
 
 const Title = styled.h2`
   color: #00d4ff;
   font-size: 2.5em;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 `;
 
-const Subtitle = styled.h3`
-  color: #bbb;
-  font-size: 1.8em;
-  margin-bottom: 20px;
-`;
-
-const UserList = styled.ul`
-  list-style: none;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+const BlockContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
   gap: 20px;
+  flex-wrap: wrap;
 `;
 
-const UserListItem = styled.li`
+const Block = styled.div`
   background: #2e2f45;
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  flex: 1 1 300px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   transition: transform 0.3s, box-shadow 0.3s;
 
   &:hover {
@@ -95,111 +61,68 @@ const UserListItem = styled.li`
   }
 `;
 
-const BlockButton = styled.button`
-  background-color: #e74c3c;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 15px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s, transform 0.3s;
-
-  &:hover {
-    background-color: #c0392b;
-    transform: scale(1.05);
-  }
+const BlockTitle = styled.h4`
+  color: #00d4ff;
+  font-size: 1.5em;
+  margin-bottom: 10px;
 `;
 
-export const AdminDashboard = () => {
+const AdminDashboard = () => {
+    const navigate = useNavigate();
     const [users, setUsers] = useState([]);
-    const [blockedSubscribers, setBlockedSubscribers] = useState([]);
-    const [activeSection, setActiveSection] = useState('UsersWithUnpaidServices');
-
-    const handleBlockSubscriber = (subscriberId) => {
-        axios.post(`http://localhost:8080/semester_6_oop_lab_1_back_war/block-user/${subscriberId}`)
-            .then(() => {
-                setBlockedSubscribers([...blockedSubscribers, subscriberId]);
-            })
-            .catch(error => console.error('Error blocking subscriber:', error));
-    };
+    const [services, setServices] = useState([]);
 
     useEffect(() => {
-        // Loading users
-        axios.get('http://localhost:8080/semester_6_oop_lab_1_back_war/user')
+        const checkAuth = async () => {
+            try {
+                const response = await axios.get('http://localhost:8080/semester_6_oop_lab_1_back_war/checkAuth', { withCredentials: true });
+                if (!response.data.authenticated) {
+                    navigate('/login');
+                }
+            } catch (error) {
+                console.error('Error checking authentication:', error);
+                navigate('/login');
+            }
+        };
+
+        checkAuth();
+
+        // Load users
+        axios.get('http://localhost:8080/semester_6_oop_lab_1_back_war/users')
             .then(response => setUsers(response.data))
             .catch(error => console.error('Error loading users:', error));
-    }, []);
 
-    const usersWithUnpaidServices = users.filter(user => user.services && user.services.some(service => service.paymentDataDTO.isPaid === false));
-    const usersWithUnpaidConversations = users.filter(user => user.conversations && user.conversations.some(conversation => conversation.payment.isPaid === false));
-
-    const renderSection = () => {
-        switch (activeSection) {
-            case 'UsersWithUnpaidServices':
-                return (
-                    <Section>
-                        <Subtitle>Users with Unpaid Services</Subtitle>
-                        <UserList>
-                            {usersWithUnpaidServices.map(user => (
-                                <UserListItem key={user.id}>
-                                    {user.name}
-                                    {user.number}
-                                    <BlockButton onClick={() => handleBlockSubscriber(user.id)}>Block</BlockButton>
-                                </UserListItem>
-                            ))}
-                        </UserList>
-                    </Section>
-                );
-            case 'UsersWithUnpaidConversations':
-                return (
-                    <Section>
-                        <Subtitle>Users with Unpaid Conversations</Subtitle>
-                        <UserList>
-                            {usersWithUnpaidConversations.map(user => (
-                                <UserListItem key={user.id}>
-                                    {user.name}
-                                    {user.number}
-                                    <BlockButton onClick={() => handleBlockSubscriber(user.id)}>Block</BlockButton>
-                                </UserListItem>
-                            ))}
-                        </UserList>
-                    </Section>
-                );
-            case 'BlockedSubscribers':
-                return (
-                    <Section>
-                        <Subtitle>Blocked Subscribers</Subtitle>
-                        <UserList>
-                            {blockedSubscribers.map(id => (
-                                <UserListItem key={id}>Subscriber {id} is blocked</UserListItem>
-                            ))}
-                        </UserList>
-                    </Section>
-                );
-            default:
-                return null;
-        }
-    };
+        // Load services
+        axios.get('http://localhost:8080/semester_6_oop_lab_1_back_war/services')
+            .then(response => setServices(response.data))
+            .catch(error => console.error('Error loading services:', error));
+    }, [navigate]);
 
     return (
-        <AdminDashboardContainer>
-            <Sidebar>
-                <SidebarTitle>Admin Menu</SidebarTitle>
-                <SidebarItem active={activeSection === 'UsersWithUnpaidServices'} onClick={() => setActiveSection('UsersWithUnpaidServices')}>
-                    <FontAwesomeIcon icon={faTachometerAlt} /> Users with Unpaid Services
-                </SidebarItem>
-                <SidebarItem active={activeSection === 'UsersWithUnpaidConversations'} onClick={() => setActiveSection('UsersWithUnpaidConversations')}>
-                    <FontAwesomeIcon icon={faUsers} /> Users with Unpaid Conversations
-                </SidebarItem>
-                <SidebarItem active={activeSection === 'BlockedSubscribers'} onClick={() => setActiveSection('BlockedSubscribers')}>
-                    <FontAwesomeIcon icon={faEraser} /> Blocked Subscribers
-                </SidebarItem>
-            </Sidebar>
-            <MainContent>
-                <Title>Admin Portal</Title>
-                {renderSection()}
-            </MainContent>
-        </AdminDashboardContainer>
+        <DashboardContainer>
+            <Header>
+                <Title>Admin Dashboard</Title>
+            </Header>
+            <BlockContainer>
+                <Block>
+                    <BlockTitle>Users</BlockTitle>
+                    <ul>
+                        {users.map(user => (
+                            <li key={user.id}>{user.name}</li>
+                        ))}
+                    </ul>
+                </Block>
+                <Block>
+                    <BlockTitle>Services</BlockTitle>
+                    <ul>
+                        {services.map(service => (
+                            <li key={service.id}>{service.name} - ${service.price}</li>
+                        ))}
+                    </ul>
+                </Block>
+            </BlockContainer>
+        </DashboardContainer>
     );
 };
+
+export default AdminDashboard;
